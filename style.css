@@ -1,0 +1,229 @@
+/* style.css */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 900px;
+    height: 556px;
+}
+
+.control-panel {
+    background-color: #f7f7f7;
+    padding: 20px;
+    width: 300px;
+    border-right: 1px solid #ddd;
+}
+
+.control-panel h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.control-panel label {
+    font-size: 14px;
+    color: #555;
+    display: block;
+    margin-bottom: 8px;
+    margin-top: 12px;
+}
+
+.control-panel input[type="file"] {
+    padding: 8px;
+    width: 100%;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.control-panel input[type="range"] {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.control-panel select,
+.control-panel input[type="checkbox"],
+.control-panel input[type="radio"] {
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.control-panel input[type="checkbox"] + label,
+.control-panel input[type="radio"] + label {
+    font-size: 14px;
+    color: #555;
+    margin-left: 8px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.canvas-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px;
+    position: relative;
+    /*max-height: 100px;*/
+}
+
+/*.canvas-container {*/
+/*    position: relative;*/
+/*    display: flex;*/
+/*    flex-direction: column;*/
+/*    justify-content: flex-start;*/
+/*    align-items: center;*/
+/*    height: 100%; !* Full height to anchor button to bottom *!*/
+/*    padding-bottom: 50px; !* Space for the button *!*/
+/*}*/
+
+canvas {
+    border: 2px solid #ddd;
+    /*border-radius: 8px;*/
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: auto;
+    transform: scale(1.5);
+}
+
+/*canvas {*/
+/*    border: 2px solid #ddd;*/
+/*    border-radius: 8px;*/
+/*    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);*/
+/*    width: 250px; !* Keep this as the set resolution *!*/
+/*    height: 122px; !* Keep this as the set resolution *!*/
+/*    transform: scale(2); !* Scaled view *!*/
+/*    transform-origin: top left;*/
+/*}*/
+
+/* Style for Dropdown (Select element) */
+select {
+    appearance: none; /* Removes default arrow and styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23999" d="M2 0L0 2h4z"/></svg>'); /* Custom dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+select:hover {
+    background-color: #e0e0e0;
+    border-color: #bbb;
+}
+
+select:focus {
+    outline: none;
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); /* macOS-style blue glow */
+}
+
+/* Style for Image Upload Button */
+input[type="file"] {
+    display: none; /* Hide the original file input */
+}
+
+#imageUploadLabel {
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    display: inline-block;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+#imageUploadLabel:hover {
+    background-color: #e0e0e0;
+    border-color: #bbb;
+}
+
+#imageUploadLabel:active {
+    background-color: #d0d0d0;
+    border-color: #aaa;
+}
+/* Button styling */
+#sendToLabelButton {
+    position: absolute;
+    bottom: 0; /* Anchors the button to the bottom of the container */
+    width: 80%;
+    padding: 12px;
+    margin: 1rem;
+    background-color: #007aff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+#sendToLabelButton:hover {
+    background-color: #005ecb;
+}
+
+#sendToLabelButton:active {
+    background-color: #004bb5;
+}
+
+#connectToLabelButton {
+    margin-top: 20px; /* Adds space above the button */
+    width: 100%;
+    padding: 12px;
+    background-color: #007aff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+#connectToLabelButton:hover {
+    background-color: #005ecb;
+}
+
+#connectToLabelButton:active {
+    background-color: #004bb5;
+}
+
+#connectToLabelButton.connected{
+    background-color: #fb2222;
+}
+
+#sendToLabelButton.disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
