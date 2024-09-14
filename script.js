@@ -137,6 +137,8 @@ function redrawCanvas() {
     if (bitmapBox.checked) {
         convertTo1Bit();
     }
+
+    removeTransparency();
 }
 
 function setBrightness(brightness) {
@@ -232,5 +234,55 @@ window.onload = function () {
     document.getElementById("landscape").checked = true;
     document.getElementById("bitmap").checked = true;
     document.getElementById("bitmap").disabled = true;
+
+}
+
+function removeTransparency() {
+    const image = document.getElementById('modifiedImage');
+    const ctx = image.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, image.width, image.height);
+    const data = imageData.data;
+    const height = image.height;
+    const width = image.width;
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (x + y * width) * 4;
+            if (data[index + 3] === 0) {
+                // set pixel to white
+                data[index] = 255;
+                data[index + 1] = 255;
+                data[index + 2] = 255;
+                data[index + 3] = 255;
+            }
+
+        }
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function convertToHex(){
+    let bitmap = '';
+    const image = document.getElementById('modifiedImage');
+    const ctx = image.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, image.width, image.height);
+    const data = imageData.data;
+    const height = image.height;
+    const width = image.width;
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (x + y * width) * 4;
+            if (data[index] === 0) {
+                bitmap += '0';
+            } else {
+                bitmap += '1';
+            }
+        }
+        bitmap += '000000';
+    }
+
+    console.log(bitmap)
+
 
 }
