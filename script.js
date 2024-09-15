@@ -261,28 +261,79 @@ function removeTransparency() {
     ctx.putImageData(imageData, 0, 0);
 }
 
-function convertToHex(){
+function convertToHex() {
     let bitmap = '';
-    const image = document.getElementById('modifiedImage');
+    let hexData = '';
+    let data = null;
+    let image = null;
+
+
+    image = document.getElementById('modifiedImage');
     const ctx = image.getContext('2d');
     const imageData = ctx.getImageData(0, 0, image.width, image.height);
-    const data = imageData.data;
+    data = imageData.data;
+
+
     const height = image.height;
     const width = image.width;
 
+    // Generate bitmap from the image data
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const index = (x + y * width) * 4;
             if (data[index] === 0) {
-                bitmap += '0';
+                bitmap += '0';  // Assuming black pixel (RGB = 0) as '0'
             } else {
-                bitmap += '1';
+                bitmap += '1';  // Any other value as '1'
             }
         }
-        bitmap += '000000';
+        bitmap += '000000';  // Padding or separation for each row
     }
 
-    console.log(bitmap)
+    // Function to convert binary string to hexadecimal
+    function binaryToHex(binaryString) {
+        // Ensure the binary string length is a multiple of 4 by padding with leading zeros
+        const paddingLength = (4 - (binaryString.length % 4)) % 4;
+        binaryString = binaryString.padStart(binaryString.length + paddingLength, '0');
 
+        let hexString = "";
 
+        // Iterate over 4-bit chunks and convert to hex
+        for (let i = 0; i < binaryString.length; i += 4) {
+            const binaryChunk = binaryString.slice(i, i + 4);
+            const hexDigit = parseInt(binaryChunk, 2).toString(16);
+            hexString += hexDigit;
+        }
+
+        return hexString.toUpperCase();
+    }
+
+    // Convert the generated bitmap to hex
+    hexData = binaryToHex(bitmap);
+
+    console.log(hexData);  // Output the hex data
 }
+
+function rotateCounterClockwise(){
+    const canvas = document.getElementById('modifiedImage');
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const height = canvas.height;
+    const width = canvas.width;
+    const rotatedData = new Uint8ClampedArray(data.length);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (x + y * width) * 4;
+            const rotatedIndex = ((width - x - 1) * height + y) * 4;
+            rotatedData[rotatedIndex] = data[index];
+            rotatedData[rotatedIndex + 1] = data[index + 1];
+            rotatedData[rotatedIndex + 2] = data[index + 2];
+            rotatedData[rotatedIndex + 3] = data[index + 3];
+        }
+    }
+
+    ctx.putImageData(new ImageData(rotatedData, width, height), 0, 0);
+}
+
