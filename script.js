@@ -266,74 +266,74 @@ function convertToHex() {
     let hexData = '';
     let data = null;
     let image = null;
+    let orientation = null;
 
+    if (document.getElementById("landscape").checked) {
+        orientation = "landscape";
+    } else if (document.getElementById("portrait").checked) {
+        orientation = "portrait";
+    }
 
     image = document.getElementById('modifiedImage');
     const ctx = image.getContext('2d');
     const imageData = ctx.getImageData(0, 0, image.width, image.height);
     data = imageData.data;
 
-
     const height = image.height;
     const width = image.width;
 
-    // Generate bitmap from the image data
+    var bitmapArray = [];
     for (let y = 0; y < height; y++) {
+        let row = '';
         for (let x = 0; x < width; x++) {
             const index = (x + y * width) * 4;
             if (data[index] === 0) {
-                bitmap += '0';  // Assuming black pixel (RGB = 0) as '0'
+                row += '0';  // Black pixel
             } else {
-                bitmap += '1';  // Any other value as '1'
+                row += '1';  // White pixel
             }
         }
-        bitmap += '000000';  // Padding or separation for each row
+        bitmapArray.push(row);
     }
 
-    // Function to convert binary string to hexadecimal
+    // Check if orientation is landscape
+    if (orientation === "landscape") {
+        let rotatedBitmap = [];
+
+        // Loop through columns (width)
+        for (let x = 0; x < width; x++) {
+            let newRow = '';
+            // For each column, get the pixel from the last row first, moving upwards
+            for (let y = height - 1; y >= 0; y--) {
+                newRow += bitmapArray[y][x];
+            }
+            rotatedBitmap.push(newRow);
+        }
+
+        // Now, the rotatedBitmap array is the rotated version of the bitmap
+        bitmapArray = rotatedBitmap;
+    }
+
+    // Convert the rotated (or original) bitmapArray back into a single string
+    bitmap = bitmapArray.join('000000');
+
+    // Convert the bitmap to hex
+    hexData = binaryToHex(bitmap);
+
+    // Binary to Hex conversion function
     function binaryToHex(binaryString) {
-        // Ensure the binary string length is a multiple of 4 by padding with leading zeros
         const paddingLength = (4 - (binaryString.length % 4)) % 4;
         binaryString = binaryString.padStart(binaryString.length + paddingLength, '0');
 
-        let hexString = "";
-
-        // Iterate over 4-bit chunks and convert to hex
+        let hexString = '';
         for (let i = 0; i < binaryString.length; i += 4) {
             const binaryChunk = binaryString.slice(i, i + 4);
             const hexDigit = parseInt(binaryChunk, 2).toString(16);
             hexString += hexDigit;
         }
-
         return hexString.toUpperCase();
     }
 
-    // Convert the generated bitmap to hex
-    hexData = binaryToHex(bitmap);
-
-    console.log(hexData);  // Output the hex data
-}
-
-function rotateCounterClockwise(){
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const height = canvas.height;
-    const width = canvas.width;
-    const rotatedData = new Uint8ClampedArray(data.length);
-
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const index = (x + y * width) * 4;
-            const rotatedIndex = ((width - x - 1) * height + y) * 4;
-            rotatedData[rotatedIndex] = data[index];
-            rotatedData[rotatedIndex + 1] = data[index + 1];
-            rotatedData[rotatedIndex + 2] = data[index + 2];
-            rotatedData[rotatedIndex + 3] = data[index + 3];
-        }
-    }
-
-    ctx.putImageData(new ImageData(rotatedData, width, height), 0, 0);
+    return hexData.toUpperCase();
 }
 

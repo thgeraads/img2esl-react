@@ -43,13 +43,13 @@
             </label>
 
         </form>
-        <button onclick="updateConnectionStatus(true)" id="connectToLabelButton">Connect to Label</button>
+        <button onclick="preConnect();" id="connectToLabelButton">Connect to Label</button>
     </div>
     <!-- Canvas on the right -->
     <div class="canvas-container">
         <canvas id="modifiedImage">
         </canvas>
-        <button onclick="convertToHex()" class="disabled" id="sendToLabelButton">Send To Label</button>
+        <button onclick="sendimg(convertToHex())" class="disabled" id="sendToLabelButton">Send To Label</button>
     </div>
 </div>
 </body>

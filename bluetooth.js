@@ -88,7 +88,7 @@ function sendIMGpart() {
 function disconnect() {
     resetVariables();
     addLog('Disconnected.');
-    document.getElementById("connectbutton").innerHTML = 'Connect';
+    // document.getElementById("connectbutton").innerHTML = 'Connect';
 }
 
 function preConnect() {
@@ -128,7 +128,7 @@ function connect() {
             return Theservice.getCharacteristic('4b646063-6264-f3a7-8941-e65356ea82fe');
         }).then(characteristic => {
             addLog('> Found write characteristic');
-            document.getElementById("connectbutton").innerHTML = 'Disconnected';
+            // document.getElementById("connectbutton").innerHTML = 'Disconnected';
             updateConnectionStatus(true); // script.js
             writeCharacteristic = characteristic;
             return;
@@ -137,18 +137,18 @@ function connect() {
 }
 
 function setStatus(statusText) {
-    document.getElementById("status").innerHTML = statusText;
+    // document.getElementById("status").innerHTML = statusText;
 }
 
 function addLog(logTXT) {
     var today = new Date();
     var time = ("0" + today.getHours()).slice(-2) + ":" + ("0" + today.getMinutes()).slice(-2) + ":" + ("0" + today.getSeconds()).slice(-2) + " : ";
-    document.getElementById("log").innerHTML += time + logTXT + '<br>';
+    // document.getElementById("log").innerHTML += time + logTXT + '<br>';
     console.log(time + logTXT);
-    while ((document.getElementById("log").innerHTML.match(/<br>/g) || []).length > 10) {
-        var logs_br_position = document.getElementById("log").innerHTML.search("<br>");
-        document.getElementById("log").innerHTML = document.getElementById("log").innerHTML.substring(logs_br_position + 4);
-    }
+    // while ((document.getElementById("log").innerHTML.match(/<br>/g) || []).length > 10) {
+    //     var logs_br_position = document.getElementById("log").innerHTML.search("<br>");
+        // document.getElementById("log").innerHTML = document.getElementById("log").innerHTML.substring(logs_br_position + 4);
+    // }
 }
 
 function hexToBytes(hex) {
