@@ -218,7 +218,7 @@ function updateConnectionStatus(connected) {
         document.getElementById('connectToLabelButton').classList.remove('connected');
         document.getElementById("connectToLabelButton").innerText = "Connect to Label";
         document.getElementById('connectToLabelButton').removeEventListener('click', function () {
-                updateConnectionStatus(false);
+                disconnect(false);
             }
         );
         document.getElementById('connectToLabelButton').addEventListener('click', function () {
@@ -316,24 +316,34 @@ function convertToHex() {
 
     // Convert the rotated (or original) bitmapArray back into a single string
     bitmap = bitmapArray.join('000000');
+    // console.log(bitmap);
 
     // Convert the bitmap to hex
     hexData = binaryToHex(bitmap);
 
     // Binary to Hex conversion function
-    function binaryToHex(binaryString) {
-        const paddingLength = (4 - (binaryString.length % 4)) % 4;
-        binaryString = binaryString.padStart(binaryString.length + paddingLength, '0');
+    function binaryToHex(binaryStr) {
+        let hexStr = '';
 
-        let hexString = '';
-        for (let i = 0; i < binaryString.length; i += 4) {
-            const binaryChunk = binaryString.slice(i, i + 4);
-            const hexDigit = parseInt(binaryChunk, 2).toString(16);
-            hexString += hexDigit;
+        // Iterate through the binary string in 4-character chunks
+        for (let i = 0; i < binaryStr.length; i += 4) {
+            // Take 4 binary digits (or less if near the end)
+            let chunk = binaryStr.substring(i, i + 4);
+            // Convert the chunk to a hex value and append to the result string
+            hexStr += parseInt(chunk, 2).toString(16).toUpperCase();
         }
-        return hexString.toUpperCase();
+
+        return hexStr;
     }
 
     return hexData.toUpperCase();
+}
+
+function fillProgressBarButton(percentage){
+    const progressBar = document.getElementById('sendToLabelButton');
+    // fill the button in with color based on the percentage
+    progressBar.style.background = `linear-gradient(to right, #007aff ${percentage}%, #ccc ${percentage}%)`;
+
+
 }
 
