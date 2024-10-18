@@ -41,23 +41,29 @@
             <label for="landscape">
                 <input name="orientation" type="radio" id="landscape" checked> Landscape
             </label>
-
         </form>
+
+        <!-- New Flip Options -->
+        <label for="flipHorizontal">
+            <input type="checkbox" id="flipHorizontal"> Flip Horizontally
+        </label>
+
+        <label for="flipVertical">
+            <input type="checkbox" id="flipVertical"> Flip Vertically
+        </label>
+
         <button onclick="preConnect();" id="connectToLabelButton">Connect to Label</button>
     </div>
+
     <!-- Canvas on the right -->
     <div class="canvas-container">
-        <canvas id="modifiedImage">
-        </canvas>
+        <canvas id="modifiedImage"></canvas>
         <button onclick="sendImageData(convertToHex())" class="disabled" id="sendToLabelButton">Send To Label</button>
     </div>
 </div>
 </body>
 
-
 <script src="script.js"></script>
 <script src="image.js"></script>
-
-
 <script src="bluetooth.js"></script>
 </html>

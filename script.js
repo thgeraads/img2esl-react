@@ -1,77 +1,105 @@
+// Get DOM elements
 const imageUpload = document.getElementById('imageUpload');
-let originalImageData = null; // Store original image data
-let originalImage = null;     // Store the original image element for redrawing
-let imageData = null;     // Store processed image data (resized or modified image)
-
 const ditherBox = document.getElementById('dither');
-ditherBox.addEventListener('change', function () {
-    redrawCanvas(); // Redraw the canvas when settings change
-});
-
 const brightnessSlider = document.getElementById('brightness');
-brightnessSlider.addEventListener('input', function () {
-    redrawCanvas(); // Redraw from the processed image when settings change
-});
-
 const bitmapBox = document.getElementById('bitmap');
-bitmapBox.addEventListener('change', function () {
-    redrawCanvas(); // Redraw from the processed image whenever settings change
-});
-
 const displaySelector = document.getElementById('displayType');
-displaySelector.addEventListener('change', function () {
-    resizeImage(); // Resize based on the display selection
-});
-
 const orientationRadios = document.querySelectorAll("input[name='orientation']");
-orientationRadios.forEach(radio => {
-    radio.addEventListener('change', function () {
-        resizeImage(); // Resize when orientation changes
-    });
-});
 
+// New Flip Checkboxes
+const flipHorizontalBox = document.getElementById('flipHorizontal');
+const flipVerticalBox = document.getElementById('flipVertical');
+
+// Buttons
+const connectButton = document.getElementById('connectToLabelButton');
+const sendButton = document.getElementById('sendToLabelButton');
+
+// Canvas and context
+const canvas = document.getElementById('modifiedImage');
+const ctx = canvas.getContext('2d');
+
+// Image variables
+let originalImage = null;     // Original Image element
+let resizedImageData = null; // Image data after resizing
+let processedImageData = null; // Image data after processing (brightness, dithering, etc.)
+
+// Event Listeners
+imageUpload.addEventListener('change', handleImage, false);
+ditherBox.addEventListener('change', redrawCanvas);
+brightnessSlider.addEventListener('input', redrawCanvas);
+bitmapBox.addEventListener('change', redrawCanvas);
+displaySelector.addEventListener('change', resizeImage);
+orientationRadios.forEach(radio => {
+    radio.addEventListener('change', resizeImage);
+});
+flipHorizontalBox.addEventListener('change', redrawCanvas);
+flipVerticalBox.addEventListener('change', redrawCanvas);
+window.onload = function () {
+    document.getElementById("landscape").checked = true;
+    document.getElementById("bitmap").checked = true;
+    document.getElementById("bitmap").disabled = true;
+};
+
+/**
+ * Handle Image Upload
+ */
 function handleImage() {
+    const file = imageUpload.files[0];
+    if (!file) return;
+
     const reader = new FileReader();
     reader.onload = function (event) {
         loadOriginalImage(event.target.result);
     }
-    reader.readAsDataURL(imageUpload.files[0]);
+    reader.readAsDataURL(file);
 }
 
-function resizeImage() {
-    const displayType = displaySelector.value;
-    const portraitCheck = document.getElementById("portrait").checked;
-    const landscapeCheck = document.getElementById("landscape").checked;
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-
-    if (!portraitCheck && !landscapeCheck) {
-        alert("Please select a display orientation");
-        return;
+/**
+ * Load Original Image into Canvas
+ * @param {string} imageSrc - Source of the image
+ */
+function loadOriginalImage(imageSrc) {
+    originalImage = new Image();
+    originalImage.onload = function () {
+        resizeImage();
     }
+    originalImage.src = imageSrc;
+}
 
-    // Determine the appropriate size based on the orientation
+/**
+ * Resize Image Based on Display Type and Orientation
+ */
+function resizeImage() {
+    if (!originalImage) return;
+
+    const displayType = displaySelector.value;
+    const portrait = document.getElementById("portrait").checked;
+    const landscape = document.getElementById("landscape").checked;
+
+    // Define dimensions based on display type and orientation
     let width, height;
-    if (portraitCheck) {
-        if (displayType === "MN@") {
+    if (displayType === "MN@") {
+        if (portrait) {
             width = 122;
             height = 250;
-        }
-    } else if (landscapeCheck) {
-        if (displayType === "MN@") {
+        } else if (landscape) {
             width = 250;
             height = 122;
         }
+    } else {
+        // Default dimensions if other display types are added
+        width = originalImage.width;
+        height = originalImage.height;
     }
 
-    // Resize the canvas to fit the new dimensions
+    // Set canvas dimensions
     canvas.width = width;
     canvas.height = height;
 
-    // Clear the canvas and scale the image to fit within the resized canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
 
-    // Calculate aspect ratio to resize the image proportionally
+    // Calculate aspect ratio
     const aspectRatio = originalImage.width / originalImage.height;
     let targetWidth, targetHeight;
 
@@ -85,107 +113,140 @@ function resizeImage() {
         targetHeight = width / aspectRatio;
     }
 
-    // Draw the image centered on the canvas
-    const offsetX = (canvas.width - targetWidth) / 2;
-    const offsetY = (canvas.height - targetHeight) / 2;
+    // Calculate offsets to center the image
+    const offsetX = (width - targetWidth) / 2;
+    const offsetY = (height - targetHeight) / 2;
+
+    // Draw the resized image on the canvas
     ctx.drawImage(originalImage, 0, 0, originalImage.width, originalImage.height, offsetX, offsetY, targetWidth, targetHeight);
 
-    // Save resized image data
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    redrawCanvas(); // Apply effects like brightness or dithering after resizing
+    // Save the resized image data
+    resizedImageData = ctx.getImageData(0, 0, width, height);
+    processedImageData = ctx.getImageData(0, 0, width, height);
+
+    // Redraw canvas with current settings
+    redrawCanvas();
 }
 
-function loadOriginalImage(imageSrc) {
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-    originalImage = new Image();
-
-    originalImage.onload = function () {
-        canvas.width = originalImage.width;
-        canvas.height = originalImage.height;
-        ctx.drawImage(originalImage, 0, 0);
-
-        // Save the original image data after loading the image
-        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        imageData = originalImageData; // Initialize imageData with the original data
-
-        // Automatically resize the image after it loads
-        resizeImage();
-    }
-
-    originalImage.src = imageSrc;
-}
-
+/**
+ * Redraw Canvas with Applied Settings
+ */
 function redrawCanvas() {
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
+    if (!resizedImageData) return;
 
-    // Reset the canvas to the resized image before applying any modifications
-    ctx.putImageData(imageData, 0, 0);
+    // Start with the resized image data
+    processedImageData = new ImageData(
+        new Uint8ClampedArray(resizedImageData.data),
+        resizedImageData.width,
+        resizedImageData.height
+    );
 
-    // Apply brightness adjustment
-    if (brightnessSlider.value !== 100) {
-        setBrightness(brightnessSlider.value);
+    // Apply brightness
+    if (brightnessSlider.value !== "100") {
+        setBrightness(processedImageData, brightnessSlider.value);
     }
 
-    // Apply dithering if checked
+    // Apply dithering
     if (ditherBox.checked) {
-        ditherImage();
+        ditherImage(processedImageData);
     }
 
-    // Convert to 1-bit if the bitmap option is checked
+    // Convert to 1-bit color
     if (bitmapBox.checked) {
-        convertTo1Bit();
+        convertTo1Bit(processedImageData);
     }
 
-    removeTransparency();
+    // Apply flipping
+    if (flipHorizontalBox.checked || flipVerticalBox.checked) {
+        flipImage(processedImageData, flipHorizontalBox.checked, flipVerticalBox.checked);
+    }
+
+    // Remove transparency
+    removeTransparency(processedImageData);
+
+    // Put the processed image data back to the canvas
+    ctx.putImageData(processedImageData, 0, 0);
 }
 
-function setBrightness(brightness) {
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-    const adjustedData = ctx.getImageData(0, 0, canvas.width, canvas.height); // Work with a fresh copy of the original image
-    const data = adjustedData.data;
+/**
+ * Set Brightness of Image Data
+ * @param {ImageData} imageData
+ * @param {number} brightness - Brightness value (0-200)
+ */
+function setBrightness(imageData, brightness) {
+    const data = imageData.data;
     const brightnessFactor = brightness / 100;
 
     for (let i = 0; i < data.length; i += 4) {
-        data[i] = data[i] * brightnessFactor;     // Red
-        data[i + 1] = data[i + 1] * brightnessFactor; // Green
-        data[i + 2] = data[i + 2] * brightnessFactor; // Blue
+        data[i]     = clamp(data[i] * brightnessFactor);     // Red
+        data[i + 1] = clamp(data[i + 1] * brightnessFactor); // Green
+        data[i + 2] = clamp(data[i + 2] * brightnessFactor); // Blue
+        // Alpha channel remains unchanged
     }
-
-    ctx.putImageData(adjustedData, 0, 0);
 }
 
-function ditherImage() {
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+/**
+ * Clamp value between 0 and 255
+ * @param {number} value
+ * @returns {number}
+ */
+function clamp(value) {
+    return Math.max(0, Math.min(255, value));
+}
+
+/**
+ * Apply Floyd-Steinberg Dithering to Image Data
+ * @param {ImageData} imageData
+ */
+function ditherImage(imageData) {
     const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
 
-    for (let i = 0; i < data.length; i += 4) {
-        const oldPixel = data[i];  // Red channel (you could also take an average of RGB)
-        const newPixel = oldPixel < 128 ? 0 : 255;  // Threshold to black or white
-        const error = oldPixel - newPixel;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 4;
+            const oldPixel = data[idx];
+            const newPixel = oldPixel < 128 ? 0 : 255;
+            const error = oldPixel - newPixel;
 
-        // Set the current pixel to black or white
-        data[i] = data[i + 1] = data[i + 2] = newPixel;  // RGB set to either 0 or 255
+            data[idx]     = newPixel;
+            data[idx + 1] = newPixel;
+            data[idx + 2] = newPixel;
 
-        // Distribute the error to neighboring pixels (Floyd-Steinberg dithering)
-        if (i + 4 < data.length) data[i + 4] += error * 7 / 16; // Right neighbor
-        if (i + 4 * canvas.width - 4 < data.length) data[i + 4 * canvas.width - 4] += error * 3 / 16; // Bottom-left neighbor
-        if (i + 4 * canvas.width < data.length) data[i + 4 * canvas.width] += error * 5 / 16; // Bottom neighbor
-        if (i + 4 * canvas.width + 4 < data.length) data[i + 4 * canvas.width + 4] += error * 1 / 16; // Bottom-right neighbor
+            // Distribute the error
+            if (x < width - 1) {
+                data[idx + 4]     = clamp(data[idx + 4]     + error * 7 / 16);
+                data[idx + 5]     = clamp(data[idx + 5]     + error * 7 / 16);
+                data[idx + 6]     = clamp(data[idx + 6]     + error * 7 / 16);
+            }
+            if (y < height - 1 && x > 0) {
+                const idxBottomLeft = ((y + 1) * width + (x - 1)) * 4;
+                data[idxBottomLeft]     = clamp(data[idxBottomLeft]     + error * 3 / 16);
+                data[idxBottomLeft + 1] = clamp(data[idxBottomLeft + 1] + error * 3 / 16);
+                data[idxBottomLeft + 2] = clamp(data[idxBottomLeft + 2] + error * 3 / 16);
+            }
+            if (y < height - 1) {
+                const idxBottom = ((y + 1) * width + x) * 4;
+                data[idxBottom]     = clamp(data[idxBottom]     + error * 5 / 16);
+                data[idxBottom + 1] = clamp(data[idxBottom + 1] + error * 5 / 16);
+                data[idxBottom + 2] = clamp(data[idxBottom + 2] + error * 5 / 16);
+            }
+            if (y < height - 1 && x < width - 1) {
+                const idxBottomRight = ((y + 1) * width + (x + 1)) * 4;
+                data[idxBottomRight]     = clamp(data[idxBottomRight]     + error * 1 / 16);
+                data[idxBottomRight + 1] = clamp(data[idxBottomRight + 1] + error * 1 / 16);
+                data[idxBottomRight + 2] = clamp(data[idxBottomRight + 2] + error * 1 / 16);
+            }
+        }
     }
-
-    // Put the modified image data back into the canvas
-    ctx.putImageData(imageData, 0, 0);
 }
 
-function convertTo1Bit() {
-    const canvas = document.getElementById('modifiedImage');
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+/**
+ * Convert Image Data to 1-Bit Color
+ * @param {ImageData} imageData
+ */
+function convertTo1Bit(imageData) {
     const data = imageData.data;
     const threshold = 128;
 
@@ -195,77 +256,75 @@ function convertTo1Bit() {
         const b = data[i + 2];
         const v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         const newValue = v < threshold ? 0 : 255;
-        data[i] = data[i + 1] = data[i + 2] = newValue;
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-}
-
-
-function updateConnectionStatus(connected) {
-    if (connected) {
-        document.getElementById('connectToLabelButton').classList.add('connected');
-        document.getElementById("connectToLabelButton").innerText = "Disconnect from Label";
-        document.getElementById('connectToLabelButton').removeEventListener('click', function () {
-                updateConnectionStatus(true);
-            }
-        );
-        document.getElementById('connectToLabelButton').addEventListener('click', function () {
-            updateConnectionStatus(false);
-        });
-        document.getElementById('sendToLabelButton').classList.remove('disabled');
-    } else {
-        document.getElementById('connectToLabelButton').classList.remove('connected');
-        document.getElementById("connectToLabelButton").innerText = "Connect to Label";
-        document.getElementById('connectToLabelButton').removeEventListener('click', function () {
-                disconnect(false);
-            }
-        );
-        document.getElementById('connectToLabelButton').addEventListener('click', function () {
-            updateConnectionStatus(true);
-        });
-        document.getElementById('sendToLabelButton').classList.add('disabled');
+        data[i]     = newValue;
+        data[i + 1] = newValue;
+        data[i + 2] = newValue;
+        // Alpha channel remains unchanged
     }
 }
 
-// Attach the event listener to handle image upload
-imageUpload.addEventListener('change', handleImage, false);
-window.onload = function () {
-    document.getElementById("landscape").checked = true;
-    document.getElementById("bitmap").checked = true;
-    document.getElementById("bitmap").disabled = true;
-
-}
-
-function removeTransparency() {
-    const image = document.getElementById('modifiedImage');
-    const ctx = image.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, image.width, image.height);
+/**
+ * Flip Image Data Horizontally and/or Vertically
+ * @param {ImageData} imageData
+ * @param {boolean} horizontal
+ * @param {boolean} vertical
+ */
+function flipImage(imageData, horizontal, vertical) {
     const data = imageData.data;
-    const height = image.height;
-    const width = image.width;
+    const width = imageData.width;
+    const height = imageData.height;
+
+    // Create a copy of the current data
+    const copy = new Uint8ClampedArray(data);
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            const index = (x + y * width) * 4;
-            if (data[index + 3] === 0) {
-                // set pixel to white
-                data[index] = 255;
-                data[index + 1] = 255;
-                data[index + 2] = 255;
-                data[index + 3] = 255;
+            let srcX = x;
+            let srcY = y;
+
+            if (horizontal) {
+                srcX = width - x - 1;
+            }
+            if (vertical) {
+                srcY = height - y - 1;
             }
 
+            const srcIdx = (srcY * width + srcX) * 4;
+            const destIdx = (y * width + x) * 4;
+
+            data[destIdx]     = copy[srcIdx];
+            data[destIdx + 1] = copy[srcIdx + 1];
+            data[destIdx + 2] = copy[srcIdx + 2];
+            data[destIdx + 3] = copy[srcIdx + 3];
         }
     }
-    ctx.putImageData(imageData, 0, 0);
 }
 
+/**
+ * Remove Transparency by Setting Transparent Pixels to White
+ * @param {ImageData} imageData
+ */
+function removeTransparency(imageData) {
+    const data = imageData.data;
+    const length = data.length;
+
+    for (let i = 0; i < length; i += 4) {
+        if (data[i + 3] === 0) { // If alpha is 0
+            data[i]     = 255; // Red
+            data[i + 1] = 255; // Green
+            data[i + 2] = 255; // Blue
+            data[i + 3] = 255; // Alpha
+        }
+    }
+}
+
+/**
+ * Convert Image Data to Hex String
+ * @returns {string} Hexadecimal representation of the image
+ */
 function convertToHex() {
     let bitmap = '';
     let hexData = '';
-    let data = null;
-    let image = null;
     let orientation = null;
 
     if (document.getElementById("landscape").checked) {
@@ -274,15 +333,13 @@ function convertToHex() {
         orientation = "portrait";
     }
 
-    image = document.getElementById('modifiedImage');
-    const ctx = image.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, image.width, image.height);
-    data = imageData.data;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
 
-    const height = image.height;
-    const width = image.width;
+    const height = imageData.height;
+    const width = imageData.width;
 
-    var bitmapArray = [];
+    let bitmapArray = [];
     for (let y = 0; y < height; y++) {
         let row = '';
         for (let x = 0; x < width; x++) {
@@ -296,54 +353,89 @@ function convertToHex() {
         bitmapArray.push(row);
     }
 
-    // Check if orientation is landscape
+    // Rotate bitmap if orientation is landscape
     if (orientation === "landscape") {
         let rotatedBitmap = [];
 
-        // Loop through columns (width)
         for (let x = 0; x < width; x++) {
             let newRow = '';
-            // For each column, get the pixel from the last row first, moving upwards
             for (let y = height - 1; y >= 0; y--) {
                 newRow += bitmapArray[y][x];
             }
             rotatedBitmap.push(newRow);
         }
 
-        // Now, the rotatedBitmap array is the rotated version of the bitmap
         bitmapArray = rotatedBitmap;
     }
 
-    // Convert the rotated (or original) bitmapArray back into a single string
+    // Join bitmap rows with '000000' as separator
     bitmap = bitmapArray.join('000000');
-    // console.log(bitmap);
 
-    // Convert the bitmap to hex
+    // Convert binary string to hexadecimal
     hexData = binaryToHex(bitmap);
-
-    // Binary to Hex conversion function
-    function binaryToHex(binaryStr) {
-        let hexStr = '';
-
-        // Iterate through the binary string in 4-character chunks
-        for (let i = 0; i < binaryStr.length; i += 4) {
-            // Take 4 binary digits (or less if near the end)
-            let chunk = binaryStr.substring(i, i + 4);
-            // Convert the chunk to a hex value and append to the result string
-            hexStr += parseInt(chunk, 2).toString(16).toUpperCase();
-        }
-
-        return hexStr;
-    }
 
     return hexData.toUpperCase();
 }
 
-function fillProgressBarButton(percentage){
-    const progressBar = document.getElementById('sendToLabelButton');
-    // fill the button in with color based on the percentage
-    progressBar.style.background = `linear-gradient(to right, #007aff ${percentage}%, #ccc ${percentage}%)`;
+/**
+ * Convert Binary String to Hexadecimal String
+ * @param {string} binaryStr
+ * @returns {string} Hexadecimal string
+ */
+function binaryToHex(binaryStr) {
+    let hexStr = '';
 
+    for (let i = 0; i < binaryStr.length; i += 4) {
+        let chunk = binaryStr.substring(i, i + 4);
+        if (chunk.length < 4) {
+            chunk = chunk.padEnd(4, '0'); // Pad with zeros if less than 4 bits
+        }
+        hexStr += parseInt(chunk, 2).toString(16).toUpperCase();
+    }
 
+    return hexStr;
 }
 
+/**
+ * Update Connection Status
+ * @param {boolean} connected
+ */
+function updateConnectionStatus(connected) {
+    if (connected) {
+        connectButton.classList.add('connected');
+        connectButton.innerText = "Disconnect from Label";
+
+        // Remove previous event listeners to avoid multiple bindings
+        connectButton.replaceWith(connectButton.cloneNode(true));
+        const newConnectButton = document.getElementById('connectToLabelButton');
+
+        newConnectButton.addEventListener('click', function () {
+            updateConnectionStatus(false);
+        });
+
+        sendButton.classList.remove('disabled');
+    } else {
+        connectButton.classList.remove('connected');
+        connectButton.innerText = "Connect to Label";
+
+        // Remove previous event listeners to avoid multiple bindings
+        connectButton.replaceWith(connectButton.cloneNode(true));
+        const newConnectButton = document.getElementById('connectToLabelButton');
+
+        newConnectButton.addEventListener('click', function () {
+            updateConnectionStatus(true);
+        });
+
+        sendButton.classList.add('disabled');
+    }
+}
+
+/**
+ * Helper Function to Fill Progress Bar Button (Optional)
+ * @param {number} percentage
+ */
+function fillProgressBarButton(percentage){
+    const progressBar = document.getElementById('sendToLabelButton');
+    // Fill the button with color based on the percentage
+    progressBar.style.background = `linear-gradient(to right, #007aff ${percentage}%, #ccc ${percentage}%)`;
+}
