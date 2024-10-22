@@ -1,0 +1,148 @@
+/* Font declarations */
+@font-face {
+    font-family: ProductSans-Regular;
+    src: url(ProductSansRegular.ttf);
+}
+@font-face {
+    font-family: OpenSans-Regular;
+    src: url(OpenSans-Regular.ttf);
+}
+@font-face {
+    font-family: Roboto-Regular;
+    src: url(Roboto-Regular.ttf);
+}
+
+/* Apply ProductSans globally */
+* {
+    font-family: ProductSans-Regular;
+}
+
+.mdui-btn {
+    font-size: 1rem;
+}
+
+/* Center container */
+#container {
+    height: 90svh; /* svh for modern devices */
+    max-width: 40svw; /* svw for modern devices */
+    background-color: #D1C4E9;
+    border-radius: 1rem;
+    margin: auto;
+    display: flex;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Flexbox layout */
+#container {
+    display: flex;
+}
+
+/* Control panel styles */
+#control-panel {
+    display: flex;
+    flex-direction: column;
+    width: 25%;
+    padding: 20px;
+    height: 100%; /* Full height of the container */
+}
+
+#control-panel-title {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #776C91;
+}
+
+/* Image upload button */
+#image-upload-button {
+    margin-bottom: 40px;
+    padding: 10px;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* Display dropdown */
+
+
+
+#display-dropdown button {
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 8px;
+    cursor: pointer;
+}
+
+/* Brightness slider */
+#image-brightness-slider {
+    margin-bottom: 20px;
+}
+
+#slider {
+    width: 100%;
+}
+
+/* Checkbox styles */
+#image-1bit-checkbox, #image-dithering-checkbox {
+    margin-bottom: 10px;
+}
+
+#image-1bit-checkbox label, #image-dithering-checkbox label {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+/* Radio and flip options */
+#image-orientation, #image-flip-horizontal, #image-flip-vertical {
+    margin-bottom: 15px;
+}
+
+/* Connect button at the bottom of the control panel using flexbox */
+#connect-button {
+    margin-top: auto; /* Pushes the button to the bottom */
+    /*background-color: #3f51b5;*/
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+#control-panel > *:not(#connect-button) {
+    margin-bottom: 20px;
+}
+
+
+/* Send button styling */
+#send-button {
+    background-color: #ccc;
+    padding: 10px;
+    color: #333;
+    border: none;
+    cursor: not-allowed;
+}
+
+/* Main content area */
+#main-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Image styling */
+#main-content img {
+    max-width: 100%;
+    max-height: 100%;
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
+/*take up rest of the space of the container*/
+#canvas {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e4d7fd;
+    border-radius: 0 1rem 1rem 0;
+}

@@ -1,69 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Processing Tool</title>
-    <style>
-    </style>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="container">
-    <!-- Control panel on the left -->
-    <div class="control-panel">
-        <h1>ESL Image Uploader</h1>
-
-        <label id="imageUploadLabel" for="imageUpload">Upload Image</label>
-        <input id="imageUpload" type="file" accept="image/*">
-
-        <label for="displayType">Display Type</label>
-        <select name="displayType" id="displayType">
-            <option value="MN@">MN@ (250x122)</option>
-        </select>
-
-        <label for="brightness">Brightness</label>
-        <input type="range" id="brightness" min="0" max="200" value="100">
-
-        <label for="dither">
-            <input type="checkbox" id="dither"> Enable dithering
-        </label>
-
-        <label for="bitmap">
-            <input type="checkbox" id="bitmap"> 1-bit color
-        </label>
-
-        <form>
-            <label for="portrait">
-                <input name="orientation" type="radio" id="portrait"> Portrait
-            </label>
-
-            <label for="landscape">
-                <input name="orientation" type="radio" id="landscape" checked> Landscape
-            </label>
-        </form>
-
-        <!-- New Flip Options -->
-        <label for="flipHorizontal">
-            <input type="checkbox" id="flipHorizontal"> Flip Horizontally
-        </label>
-
-        <label for="flipVertical">
-            <input type="checkbox" id="flipVertical"> Flip Vertically
-        </label>
-
-        <button onclick="preConnect();" id="connectToLabelButton">Connect to Label</button>
-    </div>
-
-    <!-- Canvas on the right -->
-    <div class="canvas-container">
-        <canvas id="modifiedImage"></canvas>
-        <button onclick="sendImageData(convertToHex())" class="disabled" id="sendToLabelButton">Send To Label</button>
-    </div>
-</div>
-</body>
-
-<script src="script.js"></script>
-<script src="image.js"></script>
-<script src="bluetooth.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
