@@ -13,43 +13,70 @@ import 'mdui/components/tabs.js';
 import 'mdui/components/tab-panel.js';
 import 'mdui/components/radio.js';
 import 'mdui/components/radio-group.js';
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
+import { connect, disconnect, sendHexDataToESL } from './esl.js'
+import { convertImageDataToHex } from './image.js';
 
 function App() {
+    const displayResolutions = {
+        'MN@': { width: 122, height: 250 },
+        'STN@': { width: 200, height: 200 }
+    };
+
+    // State management
     const [displayType, setDisplayType] = useState('MN@ (122x250)');
-    const [canvasDimensions, setCanvasDimensions] = useState({width: 122, height: 250});
+    const [canvasDimensions, setCanvasDimensions] = useState({ width: 122, height: 250 });
     const [originalImageData, setOriginalImageData] = useState(null);
     const [imageData, setImageData] = useState(null);
     const [orientation, setOrientation] = useState(false); // false for landscape, true for portrait
     const [sizeOption, setSizeOption] = useState('fit');
-
-    function handleSizeOptionChange(event) {
-        setSizeOption(event.target.value);
-    }
-
-    const displayResolutions = {
-        'MN@': {width: 122, height: 250},
-        'STN@': {width: 200, height: 200}
-    };
-
     const [oneBitColor, setOneBitColor] = useState(true);
     const [dithering, setDithering] = useState(false);
     const [brightness, setBrightness] = useState(50);
     const [flipX, setFlipX] = useState(false);
     const [flipY, setFlipY] = useState(false);
+    const [bluetoothConnected, setBluetoothConnected] = useState(false);
 
+
+    async function handleConnectButton(){
+        if(!bluetoothConnected){
+            const connection = await connect();
+            if (connection) {
+                setBluetoothConnected(true);
+            }
+        }
+        else{
+            disconnect(setBluetoothConnected)
+            setBluetoothConnected(false);
+        }
+    }
+
+    async function handleImageSend(){
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const newImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hexData = convertImageDataToHex(newImageData, canvas.width, canvas.height);
+
+        await sendHexDataToESL(hexData);
+    }
+
+
+
+    // Event handlers
     function handleDisplayChange(event) {
         const selectedDisplay = event.target.innerText.split(" ")[0];
         setDisplayType(selectedDisplay);
         const resolution = displayResolutions[selectedDisplay];
-        if (orientation) {
-            setCanvasDimensions({width: resolution.height, height: resolution.width});
-        } else {
-            setCanvasDimensions({width: resolution.width, height: resolution.height});
-        }
+        const newDimensions = orientation ? { width: resolution.height, height: resolution.width } : resolution;
+        setCanvasDimensions(newDimensions);
     }
 
-    function handleImageUpload(event) {
+    function handleSizeOptionChange(event) {
+        setSizeOption(event.target.value);
+    }
+
+    function handleImageUpload() {
         const imageUpload = document.createElement('input');
         imageUpload.type = 'file';
         imageUpload.accept = 'image/*';
@@ -72,6 +99,18 @@ function App() {
         }
     }
 
+    function handleOrientationChange(event) {
+        const isPortrait = event.target.checked;
+        setOrientation(isPortrait);
+        const newDimensions = isPortrait ? {
+            width: canvasDimensions.height,
+            height: canvasDimensions.width
+        } : { width: canvasDimensions.height, height: canvasDimensions.width };
+        setCanvasDimensions(newDimensions);
+        updateImage();
+    }
+
+    // Image processing
     function drawImageToCanvas(image, sizeOption = 'fit') {
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -97,15 +136,9 @@ function App() {
             offsetX = (width - renderWidth) / 2;
             offsetY = (height - renderHeight) / 2;
             ctx.drawImage(image, offsetX, offsetY, renderWidth, renderHeight);
-        }
-
-        else if (sizeOption === 'stretch') {
-            // Stretch the image to fill the canvas without maintaining aspect ratio
+        } else if (sizeOption === 'stretch') {
             ctx.drawImage(image, 0, 0, width, height);
-        }
-
-        else if (sizeOption === 'fill') {
-            // Maintain aspect ratio but ensure the canvas is completely filled
+        } else if (sizeOption === 'fill') {
             if (width / height > imageAspectRatio) {
                 renderWidth = width;
                 renderHeight = renderWidth / imageAspectRatio;
@@ -125,16 +158,8 @@ function App() {
         ctx.putImageData(imageDataObject, 0, 0);
     }
 
-
     function updateImage() {
         if (!originalImageData) return;
-
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Redraw the image on canvas with the selected size option
         drawImageToCanvas(originalImageData, sizeOption);
     }
 
@@ -144,17 +169,12 @@ function App() {
         if (brightness !== 50) {
             modifiedData = adjustBrightness(modifiedData, brightness);
         }
-
-        // Apply dithering first, before converting to 1-bit
         if (dithering) {
             modifiedData = applyDithering(modifiedData);
         }
-
-        // Then convert to 1-bit color
         if (oneBitColor) {
             modifiedData = convertTo1bpp(modifiedData);
         }
-
         if (flipX || flipY) {
             modifiedData = flipImage(modifiedData, flipX, flipY);
         }
@@ -261,26 +281,18 @@ function App() {
         return new ImageData(flippedData, width, height);
     }
 
+    // UseEffect to update image on state change
     useEffect(() => {
         updateImage();
     }, [oneBitColor, dithering, brightness, orientation, flipX, flipY, canvasDimensions, sizeOption]);
 
-    function handleOrientationChange(event) {
-        const isPortrait = event.target.checked;
-        setOrientation(isPortrait);
-        const newDimensions = isPortrait ? {
-            width: canvasDimensions.height,
-            height: canvasDimensions.width
-        } : {width: canvasDimensions.height, height: canvasDimensions.width};
-        setCanvasDimensions(newDimensions);
-        updateImage();
-    }
-
     return (
         <div id="container">
+            {/* Control Panel */}
             <div id="control-panel">
                 <h2 id="control-panel-title">ESL Image Uploader</h2>
                 <mdui-button onClick={handleImageUpload} id="image-upload-button">Select Image</mdui-button>
+
                 <mdui-dropdown>
                     <mdui-button id="display-dropdown" slot="trigger">Selected display: {displayType}</mdui-button>
                     <mdui-menu>
@@ -299,6 +311,7 @@ function App() {
                                onInput={() => setOneBitColor(!oneBitColor)}>1-bit color
                 </mdui-checkbox>
 
+                {/* Image Transformations */}
                 <div className="control-group">
                     <div className="switch-group">
                         <h4>Image Transformations</h4>
@@ -306,19 +319,17 @@ function App() {
                             <mdui-switch id="image-orientation" onInput={handleOrientationChange}></mdui-switch>
                             <p className="label" id="label-orientation">Portrait</p>
                         </div>
-
                         <div className="label-switch-group">
                             <mdui-switch id="image-flip-horizontal" onInput={() => setFlipX(!flipX)}></mdui-switch>
                             <p className="label" id="label-flip-x">Flip horizontally</p>
                         </div>
-
                         <div className="label-switch-group">
                             <mdui-switch id="image-flip-vertical" onInput={() => setFlipY(!flipY)}></mdui-switch>
                             <p className="label" id="label-flip-y">Flip vertically</p>
                         </div>
                     </div>
 
-                    {/* Radio buttons aligned vertically */}
+                    {/* Image Size Options */}
                     <div className="radio-group">
                         <mdui-radio-group name="size-option" value={sizeOption} onInput={handleSizeOptionChange}>
                             <h4>Image Size Options</h4>
@@ -341,12 +352,17 @@ function App() {
                     </div>
                 </div>
 
-                <mdui-button id="connect-button">Connect to display</mdui-button>
+                <mdui-button style={{
+                    backgroundColor: !bluetoothConnected ? '' : 'rgb(216,39,39)',
+                }} onClick={handleConnectButton} id="connect-button">{
+                    bluetoothConnected ? "Disconnect from display" : "Connect to display"
+                }</mdui-button>
             </div>
 
+            {/* Canvas Panel */}
             <div id="canvas-panel">
-                <canvas style={{height: canvasDimensions.height, width: canvasDimensions.width}} id="canvas"></canvas>
-                <mdui-button disabled full-width id="send-button">Send to display</mdui-button>
+                <canvas style={{ height: canvasDimensions.height, width: canvasDimensions.width }} id="canvas"></canvas>
+                <mdui-button full-width id="send-button" onClick={handleImageSend}>Send to display</mdui-button>
             </div>
         </div>
     );
