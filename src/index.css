@@ -15,6 +15,7 @@
 /* Apply ProductSans globally */
 * {
     font-family: ProductSans-Regular;
+    /*font-family: ProductSans-Regulard;*/
 }
 
 .mdui-btn {

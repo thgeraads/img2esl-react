@@ -21,6 +21,11 @@ function App() {
     const [originalImageData, setOriginalImageData] = useState(null);
     const [imageData, setImageData] = useState(null);
     const [orientation, setOrientation] = useState(false); // false for landscape, true for portrait
+    const [sizeOption, setSizeOption] = useState('fit');
+
+    function handleSizeOptionChange(event) {
+        setSizeOption(event.target.value);
+    }
 
     const displayResolutions = {
         'MN@': {width: 122, height: 250},
@@ -67,37 +72,59 @@ function App() {
         }
     }
 
-    function drawImageToCanvas(image) {
+    function drawImageToCanvas(image, sizeOption = 'fit') {
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const {width, height} = canvasDimensions;
+        const { width, height } = canvasDimensions;
 
         canvas.width = width;
         canvas.height = height;
 
         ctx.clearRect(0, 0, width, height);
 
-        // Maintain aspect ratio while drawing the image
+        // Maintain aspect ratio while drawing the image (for "Fit" and "Fill")
         const imageAspectRatio = image.width / image.height;
         let renderWidth, renderHeight, offsetX, offsetY;
 
-        if (width / height > imageAspectRatio) {
-            renderHeight = height;
-            renderWidth = renderHeight * imageAspectRatio;
-        } else {
-            renderWidth = width;
-            renderHeight = renderWidth / imageAspectRatio;
+        if (sizeOption === 'fit') {
+            if (width / height > imageAspectRatio) {
+                renderHeight = height;
+                renderWidth = renderHeight * imageAspectRatio;
+            } else {
+                renderWidth = width;
+                renderHeight = renderWidth / imageAspectRatio;
+            }
+            offsetX = (width - renderWidth) / 2;
+            offsetY = (height - renderHeight) / 2;
+            ctx.drawImage(image, offsetX, offsetY, renderWidth, renderHeight);
         }
 
-        offsetX = (width - renderWidth) / 2;
-        offsetY = (height - renderHeight) / 2;
+        else if (sizeOption === 'stretch') {
+            // Stretch the image to fill the canvas without maintaining aspect ratio
+            ctx.drawImage(image, 0, 0, width, height);
+        }
 
-        ctx.drawImage(image, offsetX, offsetY, renderWidth, renderHeight);
+        else if (sizeOption === 'fill') {
+            // Maintain aspect ratio but ensure the canvas is completely filled
+            if (width / height > imageAspectRatio) {
+                renderWidth = width;
+                renderHeight = renderWidth / imageAspectRatio;
+                offsetX = 0;
+                offsetY = (height - renderHeight) / 2;
+            } else {
+                renderHeight = height;
+                renderWidth = renderHeight * imageAspectRatio;
+                offsetX = (width - renderWidth) / 2;
+                offsetY = 0;
+            }
+            ctx.drawImage(image, offsetX, offsetY, renderWidth, renderHeight);
+        }
 
         let imageDataObject = ctx.getImageData(0, 0, width, height);
-        imageDataObject = convertTo1bpp(imageDataObject);
+        imageDataObject = applyTransformations(imageDataObject);
         ctx.putImageData(imageDataObject, 0, 0);
     }
+
 
     function updateImage() {
         if (!originalImageData) return;
@@ -107,12 +134,8 @@ function App() {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Redraw the image on canvas with new dimensions
-        drawImageToCanvas(originalImageData);
-
-        let imageDataObject = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        imageDataObject = applyTransformations(imageDataObject);
-        ctx.putImageData(imageDataObject, 0, 0);
+        // Redraw the image on canvas with the selected size option
+        drawImageToCanvas(originalImageData, sizeOption);
     }
 
     function applyTransformations(imageData) {
@@ -122,15 +145,15 @@ function App() {
             modifiedData = adjustBrightness(modifiedData, brightness);
         }
 
+        // Apply dithering first, before converting to 1-bit
         if (dithering) {
             modifiedData = applyDithering(modifiedData);
         }
 
+        // Then convert to 1-bit color
         if (oneBitColor) {
             modifiedData = convertTo1bpp(modifiedData);
         }
-
-
 
         if (flipX || flipY) {
             modifiedData = flipImage(modifiedData, flipX, flipY);
@@ -184,10 +207,18 @@ function App() {
 
                 data[i] = data[i + 1] = data[i + 2] = avg > 128 ? 255 : 0;
 
-                data[i + 4] += error * 7 / 16;
-                data[i + (width - 1) * 4] += error * 3 / 16;
-                data[i + width * 4] += error * 5 / 16;
-                data[i + (width + 1) * 4] += error * 1 / 16;
+                if (x < width - 1) {
+                    data[i + 4] += error * 7 / 16;
+                }
+                if (x > 0 && y < height - 1) {
+                    data[i + (width - 1) * 4] += error * 3 / 16;
+                }
+                if (y < height - 1) {
+                    data[i + width * 4] += error * 5 / 16;
+                }
+                if (x < width - 1 && y < height - 1) {
+                    data[i + (width + 1) * 4] += error * 1 / 16;
+                }
             }
         }
 
@@ -195,37 +226,54 @@ function App() {
     }
 
     function flipImage(imageData, flipX, flipY) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = imageData.width;
-        canvas.height = imageData.height;
+        const data = imageData.data;
+        const width = imageData.width;
+        const height = imageData.height;
 
-        ctx.putImageData(imageData, 0, 0);
+        const flippedData = new Uint8ClampedArray(data.length);
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-        ctx.drawImage(canvas, flipX ? -canvas.width : 0, flipY ? -canvas.height : 0);
-        ctx.restore();
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const i = (y * width + x) * 4;
+                const j = (y * width + (width - x - 1)) * 4;
 
-        return ctx.getImageData(0, 0, canvas.width, canvas.height);
+                if (flipX && flipY) {
+                    const k = ((height - y - 1) * width + x) * 4;
+                    flippedData[k] = data[i];
+                    flippedData[k + 1] = data[i + 1];
+                    flippedData[k + 2] = data[i + 2];
+                    flippedData[k + 3] = data[i + 3];
+                } else if (flipX) {
+                    flippedData[j] = data[i];
+                    flippedData[j + 1] = data[i + 1];
+                    flippedData[j + 2] = data[i + 2];
+                    flippedData[j + 3] = data[i + 3];
+                } else if (flipY) {
+                    const k = ((height - y - 1) * width + x) * 4;
+                    flippedData[k] = data[i];
+                    flippedData[k + 1] = data[i + 1];
+                    flippedData[k + 2] = data[i + 2];
+                    flippedData[k + 3] = data[i + 3];
+                }
+            }
+        }
+
+        return new ImageData(flippedData, width, height);
     }
 
     useEffect(() => {
         updateImage();
-    }, [oneBitColor, dithering, brightness, orientation, flipX, flipY, canvasDimensions]);
+    }, [oneBitColor, dithering, brightness, orientation, flipX, flipY, canvasDimensions, sizeOption]);
 
-    // Handle orientation change
     function handleOrientationChange(event) {
         const isPortrait = event.target.checked;
-        console.log(isPortrait);
         setOrientation(isPortrait);
         const newDimensions = isPortrait ? {
             width: canvasDimensions.height,
             height: canvasDimensions.width
         } : {width: canvasDimensions.height, height: canvasDimensions.width};
         setCanvasDimensions(newDimensions);
-        updateImage(); // Redraw image after updating orientation
+        updateImage();
     }
 
     return (
@@ -268,6 +316,28 @@ function App() {
                             <mdui-switch id="image-flip-vertical" onInput={() => setFlipY(!flipY)}></mdui-switch>
                             <p className="label" id="label-flip-y">Flip vertically</p>
                         </div>
+                    </div>
+
+                    {/* Radio buttons aligned vertically */}
+                    <div className="radio-group">
+                        <mdui-radio-group name="size-option" value={sizeOption} onInput={handleSizeOptionChange}>
+                            <h4>Image Size Options</h4>
+                            <div className="radio-option">
+                                <mdui-radio value="stretch" name="size-option">
+                                    <p className="label">Stretch</p>
+                                </mdui-radio>
+                            </div>
+                            <div className="radio-option">
+                                <mdui-radio value="fit" name="size-option">
+                                    <p className="label">Fit</p>
+                                </mdui-radio>
+                            </div>
+                            <div className="radio-option">
+                                <mdui-radio value="fill" name="size-option">
+                                    <p className="label">Fill</p>
+                                </mdui-radio>
+                            </div>
+                        </mdui-radio-group>
                     </div>
                 </div>
 
