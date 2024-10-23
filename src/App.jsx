@@ -13,29 +13,35 @@ import 'mdui/components/tabs.js';
 import 'mdui/components/tab-panel.js';
 import 'mdui/components/radio.js';
 import 'mdui/components/radio-group.js';
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 
 function App() {
     const [displayType, setDisplayType] = useState('MN@ (122x250)');
-    const [canvasDimensions, setCanvasDimensions] = useState({ width: 122, height: 250 });
-    const [originalImageData, setOriginalImageData] = useState(null);  // Store unaltered image
-    const [imageData, setImageData] = useState(null);  // Store the current image being displayed
+    const [canvasDimensions, setCanvasDimensions] = useState({width: 122, height: 250});
+    const [originalImageData, setOriginalImageData] = useState(null);
+    const [imageData, setImageData] = useState(null);
+    const [orientation, setOrientation] = useState(false); // false for landscape, true for portrait
+
     const displayResolutions = {
-        'MN@': { width: 122, height: 250 },
-        'STN@': { width: 200, height: 200 }
+        'MN@': {width: 122, height: 250},
+        'STN@': {width: 200, height: 200}
     };
 
-    // image manipulation flags
     const [oneBitColor, setOneBitColor] = useState(true);
     const [dithering, setDithering] = useState(false);
     const [brightness, setBrightness] = useState(50);
-    const [orientation, setOrientation] = useState("portrait");
     const [flipX, setFlipX] = useState(false);
     const [flipY, setFlipY] = useState(false);
 
     function handleDisplayChange(event) {
-        setDisplayType(event.target.innerText);
-        setCanvasDimensions(displayResolutions[event.target.innerText.split(" ")[0]]);
+        const selectedDisplay = event.target.innerText.split(" ")[0];
+        setDisplayType(selectedDisplay);
+        const resolution = displayResolutions[selectedDisplay];
+        if (orientation) {
+            setCanvasDimensions({width: resolution.height, height: resolution.width});
+        } else {
+            setCanvasDimensions({width: resolution.width, height: resolution.height});
+        }
     }
 
     function handleImageUpload(event) {
@@ -52,9 +58,8 @@ function App() {
                 const image = new Image();
                 image.src = reader.result;
                 image.onload = function () {
-                    // Store the original image data when the image is loaded
                     setOriginalImageData(image);
-                    setImageData(image);  // Initially, imageData is the same as original
+                    setImageData(image);
                     drawImageToCanvas(image);
                 }
             }
@@ -65,61 +70,68 @@ function App() {
     function drawImageToCanvas(image) {
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-
-        const width = displayType === 'MN@' ? 122 : 200;
-        const height = displayType === 'MN@' ? 250 : 200;
+        const {width, height} = canvasDimensions;
 
         canvas.width = width;
         canvas.height = height;
 
-        // Draw image to canvas
-        ctx.drawImage(image, 0, 0, width, height);
+        ctx.clearRect(0, 0, width, height);
 
-        // Apply 1-bit color conversion immediately after drawing the image
+        // Maintain aspect ratio while drawing the image
+        const imageAspectRatio = image.width / image.height;
+        let renderWidth, renderHeight, offsetX, offsetY;
+
+        if (width / height > imageAspectRatio) {
+            renderHeight = height;
+            renderWidth = renderHeight * imageAspectRatio;
+        } else {
+            renderWidth = width;
+            renderHeight = renderWidth / imageAspectRatio;
+        }
+
+        offsetX = (width - renderWidth) / 2;
+        offsetY = (height - renderHeight) / 2;
+
+        ctx.drawImage(image, offsetX, offsetY, renderWidth, renderHeight);
+
         let imageDataObject = ctx.getImageData(0, 0, width, height);
         imageDataObject = convertTo1bpp(imageDataObject);
         ctx.putImageData(imageDataObject, 0, 0);
     }
 
     function updateImage() {
-        if (!originalImageData) return;  // Exit if no image is loaded
+        if (!originalImageData) return;
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Start with the original image data
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(originalImageData, 0, 0, canvas.width, canvas.height);
 
-        // Get a fresh copy of the image data from the canvas
+        // Redraw the image on canvas with new dimensions
+        drawImageToCanvas(originalImageData);
+
         let imageDataObject = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        // Apply transformations from scratch
         imageDataObject = applyTransformations(imageDataObject);
-
-        // Draw the modified image data back to the canvas
         ctx.putImageData(imageDataObject, 0, 0);
     }
 
     function applyTransformations(imageData) {
         let modifiedData = imageData;
 
-        // Apply brightness adjustment first
         if (brightness !== 50) {
             modifiedData = adjustBrightness(modifiedData, brightness);
         }
 
-        // Apply dithering first if enabled
         if (dithering) {
             modifiedData = applyDithering(modifiedData);
         }
 
-        // Apply 1-bit color conversion last to ensure the image is black-and-white
         if (oneBitColor) {
             modifiedData = convertTo1bpp(modifiedData);
         }
 
-        // Apply flipping if necessary
+
+
         if (flipX || flipY) {
             modifiedData = flipImage(modifiedData, flipX, flipY);
         }
@@ -127,36 +139,30 @@ function App() {
         return modifiedData;
     }
 
-
     function adjustBrightness(imageData, brightness) {
         const data = imageData.data;
-        const factor = brightness / 50;  // Adjust the brightness factor
+        const factor = brightness / 50;
 
         for (let i = 0; i < data.length; i += 4) {
-            data[i] = Math.min(255, data[i] * factor);      // Red
-            data[i + 1] = Math.min(255, data[i + 1] * factor);  // Green
-            data[i + 2] = Math.min(255, data[i + 2] * factor);  // Blue
+            data[i] = Math.min(255, data[i] * factor);
+            data[i + 1] = Math.min(255, data[i + 1] * factor);
+            data[i + 2] = Math.min(255, data[i + 2] * factor);
         }
 
         return imageData;
     }
 
     function convertTo1bpp(imageData) {
-        const data = imageData.data;  // Pixel data in RGBA format
-        const threshold = 128;  // Threshold for determining black or white
+        const data = imageData.data;
+        const threshold = 128;
 
         for (let i = 0; i < data.length; i += 4) {
-            // Calculate the grayscale value (average of R, G, B)
             const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-
-            // If the grayscale value is above the threshold, set it to white (255), otherwise black (0)
             const value = avg > threshold ? 255 : 0;
 
-            // Apply the same value to R, G, and B channels to make the pixel black or white
-            data[i] = value;        // Red channel
-            data[i + 1] = value;    // Green channel
-            data[i + 2] = value;    // Blue channel
-            // Leave the alpha channel unchanged (data[i + 3])
+            data[i] = value;
+            data[i + 1] = value;
+            data[i + 2] = value;
         }
 
         return imageData;
@@ -169,25 +175,19 @@ function App() {
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const i = (y * width + x) * 4;  // Index of the current pixel
-
-                // Get the grayscale value of the current pixel
+                const i = (y * width + x) * 4;
                 const oldR = data[i];
                 const oldG = data[i + 1];
                 const oldB = data[i + 2];
                 const avg = (oldR + oldG + oldB) / 3;
-
-                // Calculate the error
                 const error = avg - (avg > 128 ? 255 : 0);
 
-                // Set the new pixel value
                 data[i] = data[i + 1] = data[i + 2] = avg > 128 ? 255 : 0;
 
-                // Distribute the error to neighboring pixels
-                data[i + 4] += error * 7 / 16;  // Right neighbor
-                data[i + (width - 1) * 4] += error * 3 / 16;  // Bottom-left neighbor
-                data[i + width * 4] += error * 5 / 16;  // Bottom neighbor
-                data[i + (width + 1) * 4] += error * 1 / 16;  // Bottom-right neighbor
+                data[i + 4] += error * 7 / 16;
+                data[i + (width - 1) * 4] += error * 3 / 16;
+                data[i + width * 4] += error * 5 / 16;
+                data[i + (width + 1) * 4] += error * 1 / 16;
             }
         }
 
@@ -200,10 +200,8 @@ function App() {
         canvas.width = imageData.width;
         canvas.height = imageData.height;
 
-        // Draw the image data onto an off-screen canvas to flip it
         ctx.putImageData(imageData, 0, 0);
 
-        // Perform the flips by translating and scaling the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
@@ -214,47 +212,55 @@ function App() {
     }
 
     useEffect(() => {
-        updateImage();  // Ensure updateImage is called on flag changes
-    }, [oneBitColor, dithering, brightness, orientation, flipX, flipY]);
+        updateImage();
+    }, [oneBitColor, dithering, brightness, orientation, flipX, flipY, canvasDimensions]);
+
+    // Handle orientation change
+    function handleOrientationChange(event) {
+        const isPortrait = event.target.checked;
+        console.log(isPortrait);
+        setOrientation(isPortrait);
+        const newDimensions = isPortrait ? {
+            width: canvasDimensions.height,
+            height: canvasDimensions.width
+        } : {width: canvasDimensions.height, height: canvasDimensions.width};
+        setCanvasDimensions(newDimensions);
+        updateImage(); // Redraw image after updating orientation
+    }
 
     return (
         <div id="container">
             <div id="control-panel">
                 <h2 id="control-panel-title">ESL Image Uploader</h2>
-                <mdui-button onClick={event => { handleImageUpload(event); }} id="image-upload-button">Select Image</mdui-button>
+                <mdui-button onClick={handleImageUpload} id="image-upload-button">Select Image</mdui-button>
                 <mdui-dropdown>
                     <mdui-button id="display-dropdown" slot="trigger">Selected display: {displayType}</mdui-button>
                     <mdui-menu>
-                        <mdui-menu-item onClick={event => { handleDisplayChange(event); }}>MN@ (122x250)</mdui-menu-item>
-                        <mdui-menu-item onClick={event => { handleDisplayChange(event); }}>STN@ (200x200)</mdui-menu-item>
+                        <mdui-menu-item onClick={handleDisplayChange}>MN@ (122x250)</mdui-menu-item>
+                        <mdui-menu-item onClick={handleDisplayChange}>STN@ (200x200)</mdui-menu-item>
                     </mdui-menu>
                 </mdui-dropdown>
 
                 <p className="label" id="label-brightness">Brightness</p>
-                <mdui-slider id="image-brightness-slider" min="0" max="100" value="50" onInput={event => {
-                    setBrightness(event.target.value);
-                }}></mdui-slider>
+                <mdui-slider id="image-brightness-slider" min="0" max="100" value="50"
+                             onInput={event => setBrightness(event.target.value)}></mdui-slider>
 
-                <mdui-checkbox id="image-dithering-checkbox" onInput={() =>{
-                    setDithering(!dithering);
-                }}>Enable dithering</mdui-checkbox>
-                <mdui-checkbox checked disabled id="image-1bit-checkbox" onInput={() => {
-                    setOneBitColor(!oneBitColor);
-                }}>1-bit color</mdui-checkbox>
+                <mdui-checkbox id="image-dithering-checkbox" onInput={() => setDithering(!dithering)}>Enable dithering
+                </mdui-checkbox>
+                <mdui-checkbox checked disabled id="image-1bit-checkbox"
+                               onInput={() => setOneBitColor(!oneBitColor)}>1-bit color
+                </mdui-checkbox>
 
-                {/* Flex container to align switches and radio buttons */}
                 <div className="control-group">
                     <div className="switch-group">
                         <h4>Image Transformations</h4>
                         <div className="label-switch-group">
-                            <mdui-switch name="orientation" id="image-orientation"></mdui-switch>
-                            <p className="label" id="label-orientation">Orientation</p>
+                            <mdui-switch id="image-orientation" onInput={handleOrientationChange}></mdui-switch>
+                            <p className="label" id="label-orientation">Portrait</p>
                         </div>
 
                         <div className="label-switch-group">
-                            <mdui-switch id="image-flip-horizontal" onInput={() => {
-                                console.log(flipX);
-                                setFlipX(!flipX)}}></mdui-switch>
+                            <mdui-switch id="image-flip-horizontal" onInput={() => setFlipX(!flipX)}></mdui-switch>
                             <p className="label" id="label-flip-x">Flip horizontally</p>
                         </div>
 
@@ -263,30 +269,13 @@ function App() {
                             <p className="label" id="label-flip-y">Flip vertically</p>
                         </div>
                     </div>
-
-                    {/* Radio buttons aligned vertically */}
-                    <div className="radio-group">
-                        <h4>Image Size Options</h4>
-                        <div className="radio-option">
-                            <mdui-radio value="stretch" name="size-option"></mdui-radio>
-                            <p className="label">Stretch</p>
-                        </div>
-                        <div className="radio-option">
-                            <mdui-radio value="fit" name="size-option"></mdui-radio>
-                            <p className="label">Fit</p>
-                        </div>
-                        <div className="radio-option">
-                            <mdui-radio value="fill" name="size-option"></mdui-radio>
-                            <p className="label">Fill</p>
-                        </div>
-                    </div>
                 </div>
 
                 <mdui-button id="connect-button">Connect to display</mdui-button>
             </div>
 
             <div id="canvas-panel">
-                <canvas style={{ height: canvasDimensions.height, width: canvasDimensions.width }} id="canvas"></canvas>
+                <canvas style={{height: canvasDimensions.height, width: canvasDimensions.width}} id="canvas"></canvas>
                 <mdui-button disabled full-width id="send-button">Send to display</mdui-button>
             </div>
         </div>
