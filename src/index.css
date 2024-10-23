@@ -23,11 +23,17 @@
 
 /* Center container */
 #container {
+    position: absolute;
     height: 90svh; /* svh for modern devices */
-    max-width: 40svw; /* svw for modern devices */
+    max-width: 90%;
+    min-width: 60%;
     background-color: #D1C4E9;
     border-radius: 1rem;
     margin: auto;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -43,7 +49,7 @@
     flex-direction: column;
     width: 25%;
     padding: 20px;
-    height: 100%; /* Full height of the container */
+    height: calc(100% - 20px); /* Full height of the container */
 }
 
 #control-panel-title {
@@ -55,31 +61,21 @@
 /* Image upload button */
 #image-upload-button {
     margin-bottom: 40px;
-    padding: 10px;
     color: white;
     border: none;
     cursor: pointer;
 }
 
 /* Display dropdown */
-
-
-
-#display-dropdown button {
+#display-dropdown {
     width: 100%;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    padding: 8px;
     cursor: pointer;
+    margin-bottom: 20px;
 }
 
 /* Brightness slider */
 #image-brightness-slider {
     margin-bottom: 20px;
-}
-
-#slider {
-    width: 100%;
 }
 
 /* Checkbox styles */
@@ -99,25 +95,15 @@
 
 /* Connect button at the bottom of the control panel using flexbox */
 #connect-button {
-    margin-top: auto; /* Pushes the button to the bottom */
-    /*background-color: #3f51b5;*/
+    margin-top: auto;
+    margin-bottom: 20px;
     color: white;
-    padding: 10px;
     border: none;
     cursor: pointer;
 }
+
 #control-panel > *:not(#connect-button) {
     margin-bottom: 20px;
-}
-
-
-/* Send button styling */
-#send-button {
-    background-color: #ccc;
-    padding: 10px;
-    color: #333;
-    border: none;
-    cursor: not-allowed;
 }
 
 /* Main content area */
@@ -138,11 +124,84 @@
 }
 
 /*take up rest of the space of the container*/
-#canvas {
+#canvas-panel {
     flex: 1;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center; /* Center items vertically */
+    align-items: center; /* Center items horizontally */
     background-color: #e4d7fd;
     border-radius: 0 1rem 1rem 0;
+    padding: 20px;
+    position: relative;
+}
+
+#canvas {
+    background-color: white;
+    width: 100%;  /* Full width */
+    max-width: 250px;  /* Control size of canvas for different modes */
+    height: auto;  /* Maintain aspect ratio */
+    border: 1px solid #ccc;
+    margin-bottom: 20px; /* Add space between canvas and button */
+    scale: 2;
+}
+
+#send-button {
+    position: absolute; /* Absolute positioning inside the canvas panel */
+    bottom: 20px; /* Stick to the bottom of the panel */
+    align-self: center; /* Center horizontally */
+    border: none;
+    cursor: pointer;
+}
+
+.disabled {
+    background-color: #ccc;
+    color: #333;
+    cursor: not-allowed;
+}
+
+.label{
+    margin: 0;  /* Remove default margin */
+}
+
+/* Flexbox layout for labels and switches */
+/* Flexbox layout for switches with labels to the right */
+.label-switch-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Keep items aligned to the start */
+    margin-bottom: 10px;
+}
+
+/* Reverse the order: switch first, then label */
+.label-switch-group .label {
+    order: 1; /* This will move the label after the switch */
+    margin-left: 10px; /* Add space between the switch and the label */
+    margin-bottom: 15px;
+}
+
+/* Flexbox layout for radio buttons to align with switches */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align radios to the left */
+    margin-left: 10%;
+    /*margin-top: 10px;*/
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.radio-option .label {
+    margin-left: 10px; /* Space between radio and label */
+}
+
+.control-group {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start; /* Align items to the top instead of bottom */
+    /*margin-top: -100px;*/
 }
